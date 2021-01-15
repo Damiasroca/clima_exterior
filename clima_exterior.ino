@@ -41,10 +41,10 @@ Point sensor("YOUR_SENSOR");
 #include <Wire.h>
 BME280I2C bme;
 
-float pressio;
-float temperatura;
-float humitat;
-float rosada;
+float pressure;
+float temperature_ext;
+float humidity;
+float dew;
 
 void wifi() {
 
@@ -89,6 +89,7 @@ void setup() {
 }
 
 void loop() {
+
   influxdb();
 
   float temp(NAN), hum(NAN), pres(NAN);
@@ -97,26 +98,29 @@ void loop() {
   BME280::PresUnit presUnit(BME280::PresUnit_hPa);
 
   bme.read(pres, temp, hum, tempUnit, presUnit);
-  
+
   EnvironmentCalculations::TempUnit     envTempUnit =  EnvironmentCalculations::TempUnit_Celsius;
 
   float dewPoint = EnvironmentCalculations::DewPoint(bme.temp(), bme.hum(), envTempUnit);
 
-  pressio     = pres;
-  temperatura = temp;
-  humitat     = hum;
-  rosada      = dewPoint;
+  pressure         = pres;
+  temperature_ext  = temp;
+  humidity         = hum;
+  dew              = dewPoint;
 
-  /*Serial.print(pressio);
+  /* BME280 debug
+
+  Serial.print(pressure);
   Serial.print("-------");
-  Serial.print(temperatura);
+  Serial.print(temperature_ext);
   Serial.print("-------");
-  Serial.print(humitat);
+  Serial.print(humidity);
   Serial.print("-------");
-  Serial.println(rosada);*/
-  
-  
-  
+  Serial.println(dew);
+  */
+
+
+
   delay(1000);
 
 }

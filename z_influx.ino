@@ -4,10 +4,10 @@ void influxdb() {
 
   // Store measured value into point
   // Report RSSI of currently connected network
-  sensor.addField("Pressió_Ext", pressio);
-  sensor.addField("Temperatura_Ext", temperatura);
-  sensor.addField("Humitat_Ext", humitat);
-  sensor.addField("Punt_de_rosada_Ext", rosada);
+  sensor.addField("Pressió_Ext", pressure);
+  sensor.addField("Temperatura_Ext", temperature_ext);
+  sensor.addField("Humitat_Ext", humidity);
+  sensor.addField("Punt_de_rosada_Ext", dew);
 
 
   // Print what are we exactly writing
