@@ -102,10 +102,12 @@ void loop() {
   EnvironmentCalculations::TempUnit     envTempUnit =  EnvironmentCalculations::TempUnit_Celsius;
 
   float dewPoint = EnvironmentCalculations::DewPoint(bme.temp(), bme.hum(), envTempUnit);
+  float AbsoluteHumidity = EnvironmentCalculations::AbsoluteHumidity(temperature, humidity, envTempUnit);
 
   pressure         = pres;
   temperature_ext  = temp;
   humidity         = hum;
+  humidity_abs     = AbsoluteHumidity;
   dew              = dewPoint;
 
   /* BME280 debug
@@ -115,6 +117,8 @@ void loop() {
   Serial.print(temperature_ext);
   Serial.print("-------");
   Serial.print(humidity);
+  Serial.print("-------");
+  Serial.print(humidity_abs);
   Serial.print("-------");
   Serial.println(dew);
   */

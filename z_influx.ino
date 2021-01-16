@@ -8,6 +8,7 @@ void influxdb() {
   sensor.addField("Temperatura_Ext", temperature_ext);
   sensor.addField("Humitat_Ext", humidity);
   sensor.addField("Punt_de_rosada_Ext", dew);
+  sensor.addField("Humitat_Absoluta", humidity_abs);
 
 
   // Print what are we exactly writing
