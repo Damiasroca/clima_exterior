@@ -1,3 +1,7 @@
+//Escrit íntegrament per Damià Sintes Roca a 18/01/2021.
+//Llegir comentaris per Migjorn o Fornells.
+//MIRAR CALIBRACiÓ PRESSiÓ ATMOSFÈRICA ABANS DE FLASHAR!!
+
 #if defined(ESP32)
 #include <WiFiMulti.h>
 WiFiMulti wifiMulti;
@@ -5,48 +9,51 @@ WiFiMulti wifiMulti;
 #elif defined(ESP8266)
 #include <ESP8266WiFiMulti.h>
 ESP8266WiFiMulti wifiMulti;
-#define DEVICE "NodeMCU_Exterior"
+#include <ESP8266HTTPClient.h>
+#include <WiFiClientSecureBearSSL.h>
+#define DEVICE "NAME _YOUR_DEVICE"  									//EDIT
 #endif
 
 #include <InfluxDbClient.h>
 #include <InfluxDbCloud.h>
 
-#include <EnvironmentCalculations.h>
-#include <BME280I2C.h>
-#include <Wire.h>
+//Fornells
+#define WIFI_SSID "+++YOUR_SSID+++"									//EDIT
 
-#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "+++YOUR_WIFI_PASS+++"								//EDIT
 
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define INFLUXDB_URL "http://YOUR_SERVER.com:8086"							//EDIT
 
-#define INFLUXDB_URL "http://YOUR_SERVER.COM:8086"
+#define INFLUXDB_TOKEN "+++YOUR_INFLUX_TOKEN+++"							//EDIT
 
-#define INFLUXDB_TOKEN "YOUR_TOKEN"
+#define INFLUXDB_ORG "+++YOUR_ORG+++"									//EDIT
 
-#define INFLUXDB_ORG "Main_ORG"
+#define INFLUXDB_BUCKET "+++YOUR_BUCKET+++"								//EDIT
 
-#define INFLUXDB_BUCKET "YOUR_BUCKET"
 
-// Set timezone string according to https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
+  #define TZ_INFO "CET-1CEST,M3.5.0,M10.5.0/3"
 
-#define TZ_INFO "CET-1CEST,M3.5.0,M10.5.0/3"
+  InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN, InfluxDbCloud2CACert);
 
-InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN, InfluxDbCloud2CACert);
+  Point sensor("NAME_YOUR_SENSOR"); 									//EDIT
 
-Point sensor("YOUR_SENSOR");
 
-#include <BME280.h>
-#include <EnvironmentCalculations.h>
-#include <BME280I2C.h>
-#include <Wire.h>
-BME280I2C bme;
+  const uint8_t fingerprint[20] = {0xdf, 0xc2, 0x44, 0xa7, 0x73, 0x4c, 0x51, 0x9b, 0x8d0, 0x12, 0x55, 0xd2, 0xee, 0x19, 0xcc, 0x98, 0xf9, 0xe8, 0x26, 0xb1};
+  const int httpsPort = 443;  //HTTPS= 443 and HTTP = 80
+  const char *host = "stations.windy.com";
 
-float pressure;
-float temperature_ext;
-float humidity;
-float dew;
+  const unsigned long eventInterval = 400000UL;
+  unsigned long previousTime = 0;
 
-void wifi() {
+  #include <BME280.h>
+  #include <EnvironmentCalculations.h>
+  #include <BME280I2C.h>
+  #include <Wire.h>
+  BME280I2C bme;
+
+  float pressio, temperatura, basca, hum_absoluta, humitat, rosada;
+
+  void wifi() {
 
 
   // Setup wifi
@@ -64,12 +71,9 @@ void wifi() {
   sensor.addTag("device", DEVICE);
 
 
-  // Accurate time is necessary for certificate validation and writing in batches
-  // For the fastest time sync find NTP servers in your area: https://www.pool.ntp.org/zone/
-  // Syncing progress and the time will be printed to Serial.
   timeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
 
-  // Check server connection
+
   if (client.validateConnection()) {
     Serial.print("Connected to InfluxDB: ");
     Serial.println(client.getServerUrl());
@@ -77,20 +81,19 @@ void wifi() {
     Serial.print("InfluxDB connection failed: ");
     Serial.println(client.getLastErrorMessage());
   }
-}
+  }
 
-void setup() {
+  void setup() {
   Serial.begin(115200);
   wifi();
   Wire.begin();
   while (!Serial) continue;
   bme.begin();
 
-}
+  }
 
-void loop() {
+  void loop() {
 
-  influxdb();
 
   float temp(NAN), hum(NAN), pres(NAN);
 
@@ -101,30 +104,32 @@ void loop() {
 
   EnvironmentCalculations::TempUnit     envTempUnit =  EnvironmentCalculations::TempUnit_Celsius;
 
-  float dewPoint = EnvironmentCalculations::DewPoint(bme.temp(), bme.hum(), envTempUnit);
-  float AbsoluteHumidity = EnvironmentCalculations::AbsoluteHumidity(temperature, humidity, envTempUnit);
+  float dewPoint         = EnvironmentCalculations::DewPoint(temp, hum, envTempUnit);
+  float AbsoluteHumidity = EnvironmentCalculations::AbsoluteHumidity(temp, hum, envTempUnit);
+  float HeatIndex        = EnvironmentCalculations::HeatIndex(temp, hum, envTempUnit);
 
-  pressure         = pres;
-  temperature_ext  = temp;
-  humidity         = hum;
-  humidity_abs     = AbsoluteHumidity;
-  dew              = dewPoint;
+  pressio      = pres; //Calibrar
+  temperatura  = temp; //Calibrar
+  humitat      = hum;
+  hum_absoluta = AbsoluteHumidity;
+  rosada       = dewPoint;
+  basca        = HeatIndex;
 
-  /* BME280 debug
-
-  Serial.print(pressure);
+  /*Serial.print(pressio);
   Serial.print("-------");
-  Serial.print(temperature_ext);
+  Serial.print(temperatura);
   Serial.print("-------");
-  Serial.print(humidity);
+  Serial.print(humitat);
   Serial.print("-------");
-  Serial.print(humidity_abs);
+  Serial.print(hum_absoluta);
   Serial.print("-------");
-  Serial.println(dew);
-  */
+  Serial.print(rosada);
+  Serial.print("-------");
+  Serial.println(basca);*/
 
-
+  influxdb();
+  post_windy();
 
   delay(1000);
 
-}
+  }

@@ -1,3 +1,6 @@
+## V2.0 HTTPSRequest added for diplaying your data on Windy.com
+
+
 # Clima_exterior
 Simple code for NodeMCU and BME280 temperature sensor and logging the data to an Influx database
 
